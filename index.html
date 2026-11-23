@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGIS Batas Administrasi & Infrastruktur</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+        /* Kotak Legenda di Kiri Bawah */
+        .legend-box {
+            background: white;
+            padding: 10px 14px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+            max-height: 220px;
+            overflow-y: auto;
+            font-size: 13px;
+        }
+        .legend-box h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #333;
+        }
+        /* Kotak Koordinat Kursor di Kanan Bawah */
+        .coord-box {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 4px 10px;
+            border-radius: 4px;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+            font-size: 12px;
+            color: #222;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Inisialisasi Peta (Wilayah DIY)
+        var map = L.map("map").setView([-7.695, 110.382], 11);
+
+        // Basemap OpenStreetMap
+        var osm = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap, GeoServer'
+        }).addTo(map);
+
+        // Memanggil 3 Layer WMS dari GeoServer
+        var layerDIY = L.tileLayer.wms("http://localhost:8080/geoserver/wms", {
+            layers: "pgweb3:DIY",
+            format: "image/png",
+            transparent: true
+        }).addTo(map);
+
+        var layerJalan = L.tileLayer.wms("http://localhost:8080/geoserver/wms", {
+            layers: "pgwebbb:JALAN_LN_25K",
+            format: "image/png",
+            transparent: true
+        }).addTo(map);
+
+        var layerToponimi = L.tileLayer.wms("http://localhost:8080/geoserver/wms", {
+            layers: "pgwebbb:TOPONIMI_PT_25K",
+            format: "image/png",
+            transparent: true
+        }).addTo(map);
+
+        // Legenda di Pojok Kiri Bawah
+        var legend = L.control({ position: "bottomleft" });
+        legend.onAdd = function () {
+            var div = L.DomUtil.create("div", "legend-box");
+            div.innerHTML =
+                "<h4>Legenda</h4>" +
+                '<img src="http://localhost:8080/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&LAYER=pgweb3:DIY" alt="Legenda DIY">';
+            return div;
+        };
+        legend.addTo(map);
+
+        // Skala Peta (Scale Bar) di atas Legenda
+        L.control.scale({ position: "bottomleft", imperial: false }).addTo(map);
+
+        // Layer Control di Pojok Kanan Atas
+        var baseMaps = {
+            "OpenStreetMap": osm
+        };
+        var overlayMaps = {
+            "Batas Administrasi DIY": layerDIY,
+            "Jaringan Jalan": layerJalan,
+            "Toponimi": layerToponimi
+        };
+        L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+        // Penunjuk Koordinat Lat/Lng saat kursor digerakkan (Pojok Kanan Bawah)
+        var coordControl = L.control({ position: "bottomright" });
+        coordControl.onAdd = function () {
+            var div = L.DomUtil.create("div", "coord-box");
+            div.id = "coord-display";
+            div.innerHTML = "Lat: -7.69500, Lng: 110.38200";
+            return div;
+        };
+        coordControl.addTo(map);
+
+        map.on("mousemove", function (e) {
+            document.getElementById("coord-display").innerHTML =
+                "Lat: " + e.latlng.lat.toFixed(5) + ", Lng: " + e.latlng.lng.toFixed(5);
+        });
+    </script>
+</body>
+</html>
